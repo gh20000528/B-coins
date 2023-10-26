@@ -1,9 +1,13 @@
 const express = require('express')
 const Binance = require('binance-api-node').default
 const cors = require('cors')
+const http = require('http');
+const WebSocket = require('ws');
 require('dotenv').config();
 
 const app = express()
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 app.use(express.json())
 app.use(cors())
 const apiKey = process.env.BINANCE_API_KEY;
@@ -13,6 +17,8 @@ const apiSecret = process.env.BINANCE_API_SECRET;
 app.listen( 8000 , () => {
   console.log('listen app in 8000 pp');
 })
+
+
 
 // 初始化未認證的客戶端
 const client = Binance();
@@ -83,13 +89,16 @@ app.get('/api/binancePrice', async (req, res) => {
         price: pair.lastPrice,
         dailyChange: pair.priceChangePercent,
       }));
-  
+      
+
       res.json(formattedData);
     } catch (error) {
       console.error(error.body);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
+
+  
 
 
   app.get('/api/topLosers', async (req, res) => {
@@ -110,6 +119,10 @@ app.get('/api/binancePrice', async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
+
+  // client.ws.allTickers(tickers => {
+  //   console.log(tickers)
+  // })
 // // 獲取賬戶信息
 // async function getAccountInfo() {
 //   try {
