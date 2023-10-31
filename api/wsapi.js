@@ -15,11 +15,41 @@ const client = BinanceApi();
 const app = express();
 app.use(cors());
 
+app.listen( 9000 , () => {
+  console.log('listen app in 8000 pp');
+})
+
+
 const io = new Server({
   cors: {
     origin: "*",
   }
 });
+
+app.post('/api/updatesymbol/:symbol',async (req, res) => {
+  const { symbol } = req.params;
+
+  // 在這裡可以做一些驗證或其他邏輯，然後更新後端的 symbol 值
+  console.log(`Received symbol update: ${symbol}`);
+  // currentSymbol = symbol;
+  const data = await fetchData(symbol);
+  res.status(200).json({ message: 'Symbol updated successfully', data});
+});
+// 更新後端的 symbol 值，例如：
+const fetchData = async (symbol = 'BTCUSDT') => {
+    try {
+      const candlesData = await client.candles({ symbol: symbol,interval: '1d' });
+      const formattedData = candlesData.map(item => ({
+        time: item.closeTime,
+        value: parseFloat(item.close),
+      }));
+      return formattedData
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+};
+
+
 
 const symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'ADAUSDT', 'XRPUSDT'];
 
@@ -42,7 +72,7 @@ async function getTopGainers() {
     try {
       const stats = await client.dailyStats();
       const sortedStats = stats.sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent));
-      const top15Stats = sortedStats.slice(0, 15);
+      const top15Stats = sortedStats.slice(0, 6);
   
       const formattedData = top15Stats.map(pair => ({
         symbol: pair.symbol,
@@ -61,14 +91,14 @@ async function getTopGainers() {
     try {
       const stats = await client.dailyStats();
       const sortedStats = stats.sort((a, b) => parseFloat(a.priceChangePercent) - parseFloat(b.priceChangePercent));
-      const top15Stats = sortedStats.slice(0, 15);
+      const top15Stats = sortedStats.slice(0, 6);
   
       const formattedData = top15Stats.map(pair => ({
         symbol: pair.symbol,
         price: pair.lastPrice,
         dailyChange: pair.priceChangePercent,
       }));
-      console.log(formattedData);
+
       return formattedData;
     } catch (error) {
       console.error(error.body);
@@ -93,6 +123,7 @@ io.on('connection',async (socket) => {
     socket.emit('LowerGainers', await getLowerGainers());
   }, updateInterval);
 
+
   // 當客戶端斷開連接時
   socket.on('disconnect', () => {
     console.log('Client disconnected from WebSocket');
@@ -100,5 +131,7 @@ io.on('connection',async (socket) => {
 
   // 監聽客戶端發送的其他事件，如果有的話...
 });
+
+
 
 io.listen(8000);
