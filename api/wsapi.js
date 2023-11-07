@@ -14,8 +14,9 @@ const binance = new Binance().options({
 const client = BinanceApi();
 const app = express();
 app.use(cors());
+const post = 9000
 
-app.listen( 9000 , () => {
+app.listen( post , () => {
   console.log('listen app in 8000 pp');
 })
 
